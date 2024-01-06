@@ -5,7 +5,7 @@ from aiomisc.log import basic_config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.routers.ping_router import ping_router
+from .routers.ping_router import ping_router
 
 tags_metadata = [
     {
