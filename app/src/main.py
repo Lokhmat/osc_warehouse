@@ -5,7 +5,7 @@ from aiomisc.log import basic_config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers.ping_router import ping_router
+from .routers.users_router import users_router
 
 tags_metadata = [
     {
@@ -24,6 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(ping_router)
+app.include_router(users_router)
 
 basic_config(logging.DEBUG, buffered=True)
