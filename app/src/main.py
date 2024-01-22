@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers.users_router import users_router
+from .routers.warehouse_router import warehouse_router
 
 tags_metadata = [
     {
@@ -25,5 +26,6 @@ app.add_middleware(
 )
 
 app.include_router(users_router)
+app.include_router(warehouse_router)
 
 basic_config(logging.DEBUG, buffered=True)

@@ -17,3 +17,5 @@ class DBConnector:
         self.engine = create_engine(
             database_url
         )
+
+db_connector = DBConnector()

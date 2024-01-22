@@ -4,4 +4,5 @@ SELECT
 FROM
     app.users
 WHERE
-    username = :username;
+    username = :username
+    AND NOT is_deleted;
