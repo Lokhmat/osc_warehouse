@@ -9,8 +9,8 @@ SELECT
     warehouses,
     is_admin,
     is_reviewer,
-    is_super_user
+    is_superuser
 FROM
     app.users
 WHERE
-    AND NOT is_deleted;
+    NOT is_deleted;

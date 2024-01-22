@@ -1,7 +1,7 @@
 import logging
 import typing
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from ..models import helpers
@@ -12,7 +12,7 @@ from ..utils import crypto
 
 users_router = APIRouter(tags=['users'])
 
-@users_router.post('/users/authorize', response_model=users.Token)
+@users_router.post('/token', response_model=users.Token)
 async def authorize(
     form_data: typing.Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
@@ -25,7 +25,7 @@ async def authorize(
     )
     return {'access_token': access_token, 'token_type': 'bearer'}
 
-@users_router.post('/users', response_model=helpers.EmptyResponse)
+@users_router.post('/users', response_model=helpers.EmptyResponse, responses=helpers.BAD_REQUEST_RESPONSE)
 async def create_user(
     new_user: users.CreateApiUser,
     _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)]

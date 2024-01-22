@@ -5,6 +5,7 @@ VALUES
         :id,
         :warehouse_name,
         :address,
+        false,
         :created_at,
         :updated_at
     )

@@ -11,7 +11,7 @@ def convert_user(user: users.InternalUser) -> users.ApiUser:
         warehouses=user.warehouses,
         is_admin=user.is_admin,
         is_reviewer=user.is_reviewer,
-        is_super_user=user.is_super_user,
+        is_superuser=user.is_superuser,
     )
 
 def convert_users(users: typing.List[users.InternalUser]) -> typing.List[users.ApiUser]:

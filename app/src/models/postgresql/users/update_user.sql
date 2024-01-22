@@ -7,7 +7,7 @@ SET
     warehouses = COALESCE(:warehouses, warehouses),
     is_admin = COALESCE(:is_admin, is_admin),
     is_reviewer = COALESCE(:is_reviewer, is_reviewer),
-    is_super_user = COALESCE(:is_super_user, is_super_user),
+    is_superuser = COALESCE(:is_superuser, is_superuser),
     password_hash = COALESCE(:password_hash, password_hash)
 WHERE
     username = :username
@@ -19,4 +19,4 @@ RETURNING
     warehouses,
     is_admin,
     is_reviewer,
-    is_super_user;
+    is_superuser;

@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from ..constants import BASE_POSTGRES_TRANSACTIONS_DIRECTORY
+from ..models import helpers
+from ..models import warehouse
 
 class Token(BaseModel):
     access_token: str
@@ -25,7 +27,7 @@ class InternalUser(SimpleUser):
     warehouses: typing.List[str]
     is_admin: bool
     is_reviewer: bool
-    is_super_user: bool
+    is_superuser: bool
 
 class UpdateUser(BaseModel):
     username: str
@@ -35,7 +37,7 @@ class UpdateUser(BaseModel):
     warehouses: typing.Optional[typing.List[str]] = None
     is_admin: typing.Optional[bool] = None
     is_reviewer: typing.Optional[bool] = None
-    is_super_user: typing.Optional[bool] = None
+    is_superuser: typing.Optional[bool] = None
     password_hash: typing.Optional[str] = None
 
 class ApiUser(BaseModel):
@@ -46,7 +48,7 @@ class ApiUser(BaseModel):
     warehouses: typing.List[str]
     is_admin: bool
     is_reviewer: bool
-    is_super_user: bool
+    is_superuser: bool
 
 class CreateApiUser(ApiUser):
     password: str
@@ -63,7 +65,7 @@ class CreateApiUser(ApiUser):
             warehouses = self.warehouses,
             is_admin = self.is_admin,
             is_reviewer = self.is_reviewer,
-            is_super_user = self.is_super_user
+            is_superuser = self.is_superuser
         ) 
 
 class UpdateApiUser(BaseModel):
@@ -74,7 +76,7 @@ class UpdateApiUser(BaseModel):
     warehouses: typing.Optional[typing.List[str]] = None
     is_admin: typing.Optional[bool] = None
     is_reviewer: typing.Optional[bool] = None
-    is_super_user: typing.Optional[bool] = None
+    is_superuser: typing.Optional[bool] = None
     password: typing.Optional[str] = None
 
     def get_update_user(self, hash_f):
@@ -86,7 +88,7 @@ class UpdateApiUser(BaseModel):
             warehouses=self.warehouses,
             is_admin=self.is_admin,
             is_reviewer=self.is_reviewer,
-            is_super_user=self.is_super_user,
+            is_superuser=self.is_superuser,
             password_hash=None if not self.password else hash_f(self.password),
         )
 
@@ -127,6 +129,16 @@ def get_users(engine) -> typing.List[InternalUser]:
 
 def create_user(engine, user: CreateApiUser, hash_f):
     with engine.connect() as connection:
+        warehouses: typing.List[warehouse.Warehouse] = []
+        with open(f'{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/warehouse/get_warehouse_list.sql') as sql:
+            query = text(sql.read())
+            connection.execute(query)
+            for row in connection.execute(query):
+                warehouses.append(warehouse.Warehouse(**row._mapping))
+
+        if not all(w in warehouses for w in user.warehouses):
+            raise helpers.get_bad_request('Invalid warehouses list')
+
         with open(f'{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/users/create_user.sql') as sql:
             query = text(sql.read())
             args = user.get_internal_user(hash_f).model_dump()

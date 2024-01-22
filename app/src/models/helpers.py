@@ -21,3 +21,15 @@ NOT_FOUND_ERROR = HTTPException(
 
 class EmptyResponse(BaseModel):
     pass
+
+class ErrorResponse(BaseModel):
+    detail: str
+
+BAD_REQUEST_RESPONSE = {400: {'model': ErrorResponse}}
+
+def get_bad_request(detail: str):
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=detail,
+        headers={'WWW-Authenticate': 'Bearer'},
+    )

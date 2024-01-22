@@ -12,5 +12,5 @@ VALUES
         :warehouses,
         :is_admin,
         :is_reviewer,
-        :is_super_user
+        :is_superuser
     );
