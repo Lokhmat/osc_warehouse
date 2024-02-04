@@ -2,20 +2,20 @@ import os
 
 from sqlalchemy import create_engine
 
-DB_CONTAINER_NAME='database'
+DB_CONTAINER_NAME = "database"
+
 
 class DBConnector:
     def __init__(self):
-        user = os.environ.get('PGUSER')
-        password = os.environ.get('PGPASSWORD')
+        user = os.environ.get("PGUSER")
+        password = os.environ.get("PGPASSWORD")
         host = DB_CONTAINER_NAME
-        port = os.environ.get('PGPORT')
-        db = os.environ.get('PGDATABASE')
+        port = os.environ.get("PGPORT")
+        db = os.environ.get("PGDATABASE")
 
-        database_url = f'postgresql://{user}:{password}@{host}:{port}/{db}'
+        database_url = f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
-        self.engine = create_engine(
-            database_url
-        )
+        self.engine = create_engine(database_url)
+
 
 db_connector = DBConnector()

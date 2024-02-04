@@ -2,6 +2,7 @@ import typing
 
 from ..models import users
 
+
 def convert_user(user: users.InternalUser) -> users.ApiUser:
     return users.ApiUser(
         username=user.username,
@@ -13,6 +14,7 @@ def convert_user(user: users.InternalUser) -> users.ApiUser:
         is_reviewer=user.is_reviewer,
         is_superuser=user.is_superuser,
     )
+
 
 def convert_users(users: typing.List[users.InternalUser]) -> typing.List[users.ApiUser]:
     return [convert_user(user) for user in users]

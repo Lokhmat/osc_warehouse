@@ -5,6 +5,7 @@ from aiomisc.log import basic_config
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .routers.items_router import items_router
 from .routers.users_router import users_router
 from .routers.warehouse_router import warehouse_router
 
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(items_router)
 app.include_router(users_router)
 app.include_router(warehouse_router)
 

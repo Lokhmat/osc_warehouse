@@ -14,36 +14,49 @@ from ..models import users
 from ..models.connector import db_connector
 from ..models.helpers import NO_PERMISSIONS_ERROR, UNATHORIZED_ERROR
 
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def hash(data: str):
     return pwd_context.hash(data)
 
+
 def create_access_token(username: str):
-    to_encode = {'sub': username}
+    to_encode = {"sub": username}
     expires_at = datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES)
-    to_encode.update({'exp': expires_at})
-    encoded_jwt = jwt.encode(to_encode, key=os.environ.get('JWT_SECRET_KEY'), algorithm=JWT_ALGORITHM)
+    to_encode.update({"exp": expires_at})
+    encoded_jwt = jwt.encode(
+        to_encode, key=os.environ.get("JWT_SECRET_KEY"), algorithm=JWT_ALGORITHM
+    )
     return encoded_jwt
+
 
 def verify_password(password: str, password_hash: str):
     return pwd_context.verify(password, password_hash)
 
-def authorize_user(connection, username: str, password: str) -> typing.Optional[users.SimpleUser]:
+
+def authorize_user(
+    connection, username: str, password: str
+) -> typing.Optional[users.SimpleUser]:
     user = users.get_simple_user(connection, username)
     if not user:
-        logging.info('Could not fing user in DB')
+        logging.info("Could not fing user in DB")
         return False
     if not verify_password(password, user.password_hash):
-        logging.info('Failed to verify user\'s password')
+        logging.info("Failed to verify user's password")
         return False
     return user
 
-def _authorize_user_with_token(token: typing.Annotated[str, Depends(oauth2_scheme)]) -> users.InternalUser:
+
+def authorize_user_with_token(
+    token: typing.Annotated[str, Depends(oauth2_scheme)]
+) -> users.InternalUser:
     try:
-        payload = jwt.decode(token, os.environ.get('JWT_SECRET_KEY'), algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            token, os.environ.get("JWT_SECRET_KEY"), algorithms=[JWT_ALGORITHM]
+        )
         username: str = payload.get("sub")
         if username is None:
             raise UNATHORIZED_ERROR
@@ -54,14 +67,20 @@ def _authorize_user_with_token(token: typing.Annotated[str, Depends(oauth2_schem
         raise UNATHORIZED_ERROR
     return user
 
-def authorize_super_user_with_token(token: typing.Annotated[str, Depends(oauth2_scheme)]) -> bool:
-    user = _authorize_user_with_token(token=token)
+
+def authorize_super_user_with_token(
+    token: typing.Annotated[str, Depends(oauth2_scheme)]
+) -> bool:
+    user = authorize_user_with_token(token=token)
     if not user.is_superuser:
         raise NO_PERMISSIONS_ERROR
     return True
-    
-def authorize_admin_with_token(token: typing.Annotated[str, Depends(oauth2_scheme)]) -> bool:
-    user = _authorize_user_with_token(token=token)
+
+
+def authorize_admin_with_token(
+    token: typing.Annotated[str, Depends(oauth2_scheme)]
+) -> bool:
+    user = authorize_user_with_token(token=token)
     if not user.is_admin:
         raise NO_PERMISSIONS_ERROR
     return True

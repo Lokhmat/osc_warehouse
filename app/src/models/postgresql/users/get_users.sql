@@ -1,4 +1,5 @@
 SELECT
+    id,
     username,
     password_hash,
     first_name,

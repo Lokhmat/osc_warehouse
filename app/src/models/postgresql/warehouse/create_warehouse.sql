@@ -9,6 +9,8 @@ VALUES
         :created_at,
         :updated_at
     )
+ON CONFLICT (id)
+DO UPDATE SET id = :id
 RETURNING 
     id,
     warehouse_name,
