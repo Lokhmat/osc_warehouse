@@ -11,20 +11,40 @@ from ..constants import BASE_POSTGRES_TRANSACTIONS_DIRECTORY
 class Item(BaseModel):
     id: str
     item_name: str
+    item_type: typing.Optional[str]
+    manufacturer: typing.Optional[str]
+    model: typing.Optional[str]
+    description: typing.Optional[str]
     codes: typing.List[str]
 
 
 class CreateItem(BaseModel):
     item_name: str
+    item_type: typing.Optional[str] = None
+    manufacturer: typing.Optional[str] = None
+    model: typing.Optional[str] = None
+    description: typing.Optional[str] = None
     codes: typing.List[str]
 
     def get_item(self, idempotency_token: str) -> Item:
-        return Item(id=idempotency_token, item_name=self.item_name, codes=self.codes)
+        return Item(
+            id=idempotency_token,
+            item_name=self.item_name,
+            item_type=self.item_type,
+            manufacturer=self.manufacturer,
+            model=self.model,
+            description=self.description,
+            codes=self.codes,
+        )
 
 
 class UpdateItem(BaseModel):
     id: str
     item_name: typing.Optional[str] = None
+    item_type: typing.Optional[str] = None
+    manufacturer: typing.Optional[str] = None
+    model: typing.Optional[str] = None
+    description: typing.Optional[str] = None
     codes: typing.Optional[typing.List[str]] = None
 
 

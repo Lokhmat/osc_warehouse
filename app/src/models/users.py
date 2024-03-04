@@ -4,8 +4,7 @@ import typing
 
 from pydantic import BaseModel
 
-from psycopg2 import errors
-from sqlalchemy import text
+from sqlalchemy import exc, text
 
 from ..constants import BASE_POSTGRES_TRANSACTIONS_DIRECTORY
 from ..models import helpers
@@ -45,6 +44,12 @@ class UpdateUser(BaseModel):
     is_reviewer: typing.Optional[bool] = None
     is_superuser: typing.Optional[bool] = None
     password_hash: typing.Optional[str] = None
+
+
+class ShortApiUser(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
 
 
 class ApiUser(BaseModel):
@@ -156,7 +161,7 @@ def create_user(
         ) as sql:
             query = text(sql.read())
             for row in connection.execute(query):
-                warehouses.append(warehouse.Warehouse(**row._mapping))
+                warehouses.append(row.id)
 
         if not all(w in warehouses for w in user.warehouses):
             raise helpers.get_bad_request(
@@ -170,7 +175,7 @@ def create_user(
             args = user.get_internal_user(idempotency_token, hash_f).model_dump()
             try:
                 result = connection.execute(query, args).all()
-            except errors.UniqueViolation as _:
+            except exc.IntegrityError as _:
                 raise helpers.get_bad_request(
                     "Пользователь с таким именем пользователя уже существует"
                 )
@@ -183,6 +188,18 @@ def create_user(
 
 def delete_user(engine, username: str):
     with engine.connect() as connection:
+        user = None
+        with open(f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/users/get_user.sql") as sql:
+            query = text(sql.read())
+            args = {"username": username}
+            for row in connection.execute(query, args):
+                user = InternalUser(**row._mapping)
+
+        if not user:
+            return
+        if user.is_superuser:
+            raise helpers.get_bad_request("Невозможно удалить суперюзера")
+
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/users/delete_user.sql"
         ) as sql:

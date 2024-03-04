@@ -35,7 +35,9 @@ async def authorize(form_data: typing.Annotated[OAuth2PasswordRequestForm, Depen
 async def create_user(
     new_user: users.CreateApiUser,
     x_request_idempotency_token: typing.Annotated[str, Header()],
-    _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)],
+    _: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+    ],
 ):
     return converters.convert_user(
         users.create_user(
@@ -53,7 +55,9 @@ async def create_user(
     responses=helpers.UNATHORIZED_RESPONSE,
 )
 async def get_users(
-    _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)]
+    _: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+    ]
 ):
     db_users = users.get_users(db_connector.engine)
     return users.ListApiUsers(items=converters.convert_users(db_users))
@@ -64,7 +68,9 @@ async def get_users(
 )
 async def get_user(
     username: str,
-    _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)],
+    _: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+    ],
 ):
     user = users.get_user(db_connector.engine, username=username)
     if not user:
@@ -75,11 +81,13 @@ async def get_user(
 @users_router.delete(
     "/users",
     response_model=helpers.EmptyResponse,
-    responses=helpers.UNATHORIZED_RESPONSE,
+    responses=helpers.BAD_REQUEST_RESPONSE,
 )
 async def delete_user(
     username: str,
-    _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)],
+    _: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+    ],
 ):
     users.delete_user(db_connector.engine, username=username)
     return helpers.EmptyResponse()
@@ -90,7 +98,9 @@ async def delete_user(
 )
 async def update_user(
     update_user_data: users.UpdateApiUser,
-    _: typing.Annotated[bool, Depends(crypto.authorize_super_user_with_token)],
+    _: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+    ],
 ):
     db_user = users.update_user(
         db_connector.engine, new_data=update_user_data, hash_f=crypto.hash

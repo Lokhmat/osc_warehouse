@@ -3,6 +3,7 @@ import typing
 from fastapi import APIRouter, Depends, Header
 
 from ..models import helpers
+from ..models import users
 from ..models import warehouse
 from ..models.connector import db_connector
 from ..utils import crypto
@@ -18,7 +19,7 @@ warehouse_router = APIRouter(tags=["warehouse"])
 async def create_warehouse(
     api_warehouse: warehouse.SimpleWarehouse,
     x_request_idempotency_token: typing.Annotated[str, Header()],
-    _: typing.Annotated[bool, Depends(crypto.authorize_admin_with_token)],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
 ):
     return warehouse.create_warehouse(
         engine=db_connector.engine,
@@ -34,7 +35,7 @@ async def create_warehouse(
 )
 async def get_warehouse_by_id(
     warehouse_id: str,
-    _: typing.Annotated[bool, Depends(crypto.authorize_admin_with_token)],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
 ):
     db_warehouse = warehouse.get_warehouse_by_id(
         engine=db_connector.engine, id=warehouse_id
@@ -50,7 +51,7 @@ async def get_warehouse_by_id(
     responses=helpers.UNATHORIZED_RESPONSE,
 )
 async def get_warehouse_list(
-    _: typing.Annotated[bool, Depends(crypto.authorize_admin_with_token)]
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)]
 ):
     return warehouse.ApiWarehouseList(
         items=warehouse.get_warehouse_list(engine=db_connector.engine)
@@ -64,7 +65,7 @@ async def get_warehouse_list(
 )
 async def update_warehouse(
     warehouse_update: warehouse.WarehouseUpdate,
-    _: typing.Annotated[bool, Depends(crypto.authorize_admin_with_token)],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
 ):
     db_warehouse = warehouse.update_warehouse(
         engine=db_connector.engine, warehouse_update=warehouse_update
@@ -81,7 +82,7 @@ async def update_warehouse(
 )
 async def delete_warehouse(
     warehouse_id: str,
-    _: typing.Annotated[bool, Depends(crypto.authorize_admin_with_token)],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
 ):
     warehouse.delete_warehouse(engine=db_connector.engine, id=warehouse_id)
     return helpers.EmptyResponse()
