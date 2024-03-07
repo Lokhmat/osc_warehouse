@@ -140,6 +140,20 @@ def get_user(engine, username: str) -> typing.Optional[InternalUser]:
     return result
 
 
+def get_user_by_id_transaction(
+    connection, user_id: str
+) -> typing.Optional[InternalUser]:
+    result: typing.Optional[InternalUser] = None
+    with open(
+        f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/users/get_user_by_id.sql"
+    ) as sql:
+        query = text(sql.read())
+        args = {"user_id": user_id}
+        for row in connection.execute(query, args):
+            result = InternalUser(**row._mapping)
+    return result
+
+
 def get_users(engine) -> typing.List[InternalUser]:
     result: typing.List[InternalUser] = []
     with engine.connect() as connection:

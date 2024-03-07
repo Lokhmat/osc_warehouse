@@ -1,6 +1,12 @@
 SELECT
-    *
+    id,
+    item_name,
+    item_type,
+    manufacturer,
+    model,
+    description,
+    codes
 FROM
     app.items
 WHERE
-    id IN :item_ids;
+    id = ANY(:item_ids);

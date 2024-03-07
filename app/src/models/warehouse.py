@@ -83,6 +83,19 @@ def get_warehouse_by_id(engine, id: str) -> typing.Optional[Warehouse]:
     return result
 
 
+def get_simple_warehouse_by_id_transaction(
+    connection, id: str
+) -> typing.Optional[SimpleWarehouse]:
+    result: typing.Optional[Warehouse] = None
+    with open(
+        f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/warehouse/get_simple_warehouse_by_id.sql"
+    ) as sql:
+        query = text(sql.read())
+        for row in connection.execute(query, {"id": id}):
+            result = SimpleWarehouse(**row._mapping)
+    return result
+
+
 def update_warehouse(
     engine, warehouse_update: WarehouseUpdate
 ) -> typing.Optional[Warehouse]:

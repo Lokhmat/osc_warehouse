@@ -8,6 +8,7 @@ from ..models import helpers
 from ..models import applications
 from ..models import users
 from ..models.connector import db_connector
+from ..utils import converters
 from ..utils import crypto
 
 applications_router = APIRouter(tags=["applications"])
@@ -42,7 +43,15 @@ async def get_application(
         users.InternalUser, Depends(crypto.authorize_user_with_token)
     ],
 ):
-    pass
+    application = applications.get_application_by_id(
+        db_connector.engine,
+        id,
+    )
+    if not application:
+        raise helpers.NOT_FOUND_ERROR
+    actions = []
+    # TODO: Научиться придумывать экшны
+    return applications.get_application_with_actions(application, actions)
 
 
 @applications_router.patch(

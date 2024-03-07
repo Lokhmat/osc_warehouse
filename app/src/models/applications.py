@@ -8,9 +8,11 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from ..constants import BASE_POSTGRES_TRANSACTIONS_DIRECTORY
+from ..models import helpers
 from ..models.items import ItemWithCount, ListItemsWithCount
-from ..models.users import ShortApiUser
-from ..models.warehouse import SimpleWarehouse
+from ..models.users import ApiUser, get_user_by_id_transaction
+from ..models.warehouse import SimpleWarehouse, get_simple_warehouse_by_id_transaction
+from ..utils.converters import convert_user
 
 
 class ApplicationType(str, Enum):
@@ -60,8 +62,8 @@ class ApplicationData(BaseModel):
     description: str
     type: ApplicationType
     status: ApplicationStatus
-    created_by: ShortApiUser
-    approved_by: typing.Optional[ShortApiUser] = None
+    created_by: ApiUser
+    approved_by: typing.Optional[ApiUser] = None
     sent_from_warehouse: typing.Optional[SimpleWarehouse] = None
     sent_to_warehouse: typing.Optional[SimpleWarehouse] = None
     linked_to_application_id: typing.Optional[str] = None
@@ -120,30 +122,6 @@ class ChangeApplicationRequest(BaseModel):
         )
 
 
-# def parse_to_application(
-#     internal_application: InternalApplication,
-#     creator: ApplicationModifier,
-#     approver: typing.Optional[ApplicationModifier] = None,
-# ) -> Application:
-#     return Application(
-#         id=internal_application.id,
-#         application_data=ApplicationData(
-#             name=internal_application.application_id,
-#             description=internal_application.description,
-#             type=internal_application.type,
-#             status=internal_application.status,
-#             created_by=creator,
-#             approved_by=approver
-#             sent_from_warehouse: typing.Optional[str] = None
-#             sent_to_warehouse: typing.Optional[str] = None
-#             linked_to_application: typing.Optional[str] = None
-#         ),
-#         application_payload=ApplicationPayload(),
-#         created_at=internal_application.created_at,
-#         updated_at=internal_application.updated_at,
-#     )
-
-
 def _get_application_payload(
     connection, item_id_to_count: typing.Mapping[str, id]
 ) -> ApplicationPayload:
@@ -151,13 +129,19 @@ def _get_application_payload(
         f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/get_application_payload.sql"
     ) as sql:
         query = text(sql.read())
-        items = connection.execute(query, {"item_ids": item_id_to_count.keys()}).all()
+        items = connection.execute(
+            query, {"item_ids": list(item_id_to_count.keys())}
+        ).all()
         return ApplicationPayload(
             items=[
                 ItemWithCount(
                     id=item.id,
                     item_name=item.item_name,
+                    item_type=item.item_type,
                     codes=item.codes,
+                    manufacturer=item.manufacturer,
+                    model=item.model,
+                    description=item.description,
                     count=item_id_to_count[item.id],
                 )
                 for item in items
@@ -165,14 +149,55 @@ def _get_application_payload(
         )
 
 
+def get_application_with_actions(
+    application: Application,
+    actions: typing.List[ApplicationAction],
+):
+    return ApplicationWithActions(
+        id=application.id,
+        application_data=application.application_data,
+        application_payload=application.application_payload,
+        created_at=application.created_at,
+        updated_at=application.updated_at,
+        actions=actions,
+    )
+
+
 def create_application(
     engine,
     new_application: InternalApplication,
 ) -> Application:
     with engine.connect() as connection:
+        created_by = get_user_by_id_transaction(
+            connection, new_application.created_by_id
+        )
+        if not created_by:
+            raise helpers.get_bad_request(
+                "Нельзя создать заявку от имени этого пользователя"
+            )
+        sent_to_warehouse = (
+            get_simple_warehouse_by_id_transaction(
+                connection, new_application.sent_to_warehouse_id
+            )
+            if new_application.sent_to_warehouse_id
+            else None
+        )
+        if bool(new_application.sent_to_warehouse_id) != bool(sent_to_warehouse):
+            raise helpers.get_bad_request("Склад отправки не существует")
+        sent_from_warehouse = (
+            get_simple_warehouse_by_id_transaction(
+                connection, new_application.sent_from_warehouse_id
+            )
+            if new_application.sent_from_warehouse_id
+            else None
+        )
+        if bool(new_application.sent_from_warehouse_id) != bool(sent_from_warehouse):
+            raise helpers.get_bad_request("Склад получения не существует")
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/create_application.sql"
         ) as sql:
+            # Может все таки переписать на классы?
+            # Кривовато получается что тут нужно импортить модуль другой модели
             query = text(sql.read())
             args = new_application.model_dump()
             application = connection.execute(query, args).all()
@@ -189,30 +214,10 @@ def create_application(
                     description=application.description,
                     type=application.type,
                     status=application.status,
-                    created_by=ShortApiUser(
-                        username=application.created_by_username,
-                        first_name=application.created_by_firstname,
-                        last_name=application.created_by_lastname,
-                    ),
-                    approved_by=ShortApiUser(
-                        username=application.created_by_username,
-                        first_name=application.created_by_firstname,
-                        last_name=application.created_by_lastname,
-                    )
-                    if application.approved_by_username
-                    else None,
-                    sent_from_warehouse=SimpleWarehouse(
-                        warehouse_name=application.sent_from_warehouse_name,
-                        address=application.sent_from_warehouse_address,
-                    )
-                    if application.sent_from_warehouse_name
-                    else None,
-                    sent_to_warehouse=SimpleWarehouse(
-                        warehouse_name=application.sent_to_warehouse_name,
-                        address=application.sent_to_warehouse_address,
-                    )
-                    if application.sent_to_warehouse_name
-                    else None,
+                    created_by=convert_user(created_by),
+                    approved_by=None,
+                    sent_from_warehouse=sent_from_warehouse,
+                    sent_to_warehouse=sent_to_warehouse,
                     linked_to_application_id=application.linked_to_application_id,
                 ),
                 application_payload=application_payload,
@@ -222,3 +227,61 @@ def create_application(
         connection.commit()
     logging.info("Created item card")
     return result
+
+
+def get_application_by_id(
+    engine,
+    id: str,
+):
+    item: typing.Optional[Application] = None
+    with engine.connect() as connection:
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/get_application_by_id.sql"
+        ) as sql:
+            query = text(sql.read())
+            application = connection.execute(query, {"application_id": id}).all()
+            if not application:
+                return None
+            application = application[0]
+            application_payload = _get_application_payload(
+                connection, application.payload
+            )
+            created_by = get_user_by_id_transaction(
+                connection, application.created_by_id
+            )
+            approved_by = (
+                get_user_by_id_transaction(connection, application.approved_by_id)
+                if application.approved_by_id
+                else None
+            )
+            sent_to_warehouse = (
+                get_simple_warehouse_by_id_transaction(
+                    connection, application.sent_to_warehouse_id
+                )
+                if application.sent_to_warehouse_id
+                else None
+            )
+            sent_from_warehouse = (
+                get_simple_warehouse_by_id_transaction(
+                    connection, application.sent_from_warehouse_id
+                )
+                if application.sent_from_warehouse_id
+                else None
+            )
+            return Application(
+                id=application.id,
+                application_data=ApplicationData(
+                    name=application.name,
+                    description=application.description,
+                    type=application.type,
+                    status=application.status,
+                    created_by=convert_user(created_by),
+                    approved_by=convert_user(approved_by) if approved_by else None,
+                    sent_from_warehouse=sent_from_warehouse,
+                    sent_to_warehouse=sent_to_warehouse,
+                    linked_to_application_id=application.linked_to_application_id,
+                ),
+                application_payload=application_payload,
+                created_at=application.created_at,
+                updated_at=application.updated_at,
+            )
