@@ -50,7 +50,14 @@ async def get_application(
     if not application:
         raise helpers.NOT_FOUND_ERROR
     actions = []
-    # TODO: Научиться придумывать экшны
+    if application.application_data.status == applications.ApplicationStatus.PENDING:
+        if user.is_reviewer or user.is_super_user:
+            actions = [
+                applications.ApplicationAction.APPROVE,
+                applications.ApplicationAction.REJECT,
+                applications.ApplicationAction.EDIT,
+                applications.ApplicationAction.DELETE,
+            ]
     return applications.get_application_with_actions(application, actions)
 
 
@@ -66,9 +73,29 @@ async def patch_application(
         users.InternalUser, Depends(crypto.authorize_user_with_token)
     ],
 ):
-    pass
+    return applications.update_application(
+        db_connector.engine,
+        new_application.get_internal_application(id, user.id),
+        user.id,
+    )
 
 
+@applications_router.delete(
+    "/applications",
+    response_model=helpers.EmptyResponse,
+    responses={**helpers.BAD_REQUEST_RESPONSE, **helpers.NOT_FOUND_RESPONSE},
+)
+async def delete_application(
+    id: str,
+    user: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_user_with_token)
+    ],
+):
+    applications.delete_application(db_connector.engine, id, user.id)
+    return helpers.EmptyResponse()
+
+
+# TODO: Добавить идемпотентность
 @applications_router.put(
     "/applications/approve",
     response_model=helpers.EmptyResponse,
@@ -77,10 +104,26 @@ async def patch_application(
 async def approve_application(
     id: str,
     user: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_admin_with_token)
+        users.InternalUser, Depends(crypto.authorize_reviewer_with_token)
     ],
 ):
-    pass
+    applications.approve_application(db_connector.engine, id, user.id)
+    return helpers.EmptyResponse()
+
+
+@applications_router.put(
+    "/applications/reject",
+    response_model=helpers.EmptyResponse,
+    responses=helpers.UNATHORIZED_RESPONSE,
+)
+async def reject_application(
+    id: str,
+    user: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_reviewer_with_token)
+    ],
+):
+    applications.reject_application(db_connector.engine, id, user.id)
+    return helpers.EmptyResponse()
 
 
 @applications_router.get(
@@ -90,9 +133,10 @@ async def approve_application(
 )
 async def get_applications_list(
     limit: int,
-    cursor: typing.Optional[datetime],
     user: typing.Annotated[
         users.InternalUser, Depends(crypto.authorize_user_with_token)
     ],
+    cursor: typing.Optional[datetime] = None,
 ):
-    pass
+    # Возвращать в зависимости от пользователя
+    return applications.get_applications_list(db_connector.engine, cursor, limit)

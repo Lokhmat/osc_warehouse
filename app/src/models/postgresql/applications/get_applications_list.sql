@@ -15,5 +15,7 @@ SELECT
 FROM
     app.applications
 WHERE
-    application_id = :application_id
+    created_at < COALESCE(:cursor, NOW())
+ORDER BY created_at DESC
+LIMIT :limit
 ;

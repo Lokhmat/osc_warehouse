@@ -10,7 +10,7 @@ CREATE TABLE app.applications (
     status app.application_status NOT NULL,
     payload JSONB NOT NULL,
     created_by_id TEXT NOT NULL,
-    approved_by_id TEXT,
+    finished_by_id TEXT,
     sent_from_warehouse_id TEXT,
     sent_to_warehouse_id TEXT,
     linked_to_application_id TEXT,
