@@ -8,5 +8,6 @@ WHERE
     application_id = :application_id
     AND status = 'pending'
 RETURNING
+    sent_from_warehouse_id,
     sent_to_warehouse_id,
     payload;

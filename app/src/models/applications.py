@@ -387,7 +387,6 @@ def get_application_by_id(
                 updated_at=application.updated_at,
             )
 
-# TODO: support other application types
 def approve_application(engine, id: str, approver_id: str):
     with engine.connect() as connection:
         with open(
@@ -409,13 +408,35 @@ def approve_application(engine, id: str, approver_id: str):
             result = connection.execute(
                 query, {"application_id": id, "finished_by_id": approver_id}
             ).all()
-            sent_to_warehouse_id, payload = (
+            sent_from_warehouse_id, sent_to_warehouse_id, payload = (
+                result[0].sent_from_warehouse_id,
                 result[0].sent_to_warehouse_id,
                 result[0].payload,
             )
+        if sent_from_warehouse_id:
+            with open(
+                f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deduct_items_from_warehouse.sql"
+            ) as sql:
+                query = text(sql.read())
+                _, item_ids, counts = _repack_payload_from_application(
+                    sent_from_warehouse_id, payload
+                )
+                result = connection.execute(
+                    query,
+                    {
+                        "warehouse_id": sent_from_warehouse_id,
+                        "item_ids": item_ids,
+                        "counts": counts,
+                    },
+                )
+                if result.rowcount != len(item_ids):
+                    connection.rollback()
+                    raise helpers.get_bad_request(
+                        "Нельзя списать больше товаров чем есть на складе"
+                    )
         if sent_to_warehouse_id:
             with open(
-                f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/update_warehouse_to_items.sql"
+                f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deposit_items_on_warehouse.sql"
             ) as sql:
                 query = text(sql.read())
                 warehouse_ids, item_ids, counts = _repack_payload_from_application(
