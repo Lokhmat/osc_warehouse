@@ -56,7 +56,7 @@ async def create_user(
 )
 async def get_users(
     _: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
+        users.InternalUser, Depends(crypto.authorize_user_user_with_token)
     ]
 ):
     db_users = users.get_users(db_connector.engine)
@@ -68,9 +68,7 @@ async def get_users(
 )
 async def get_user(
     username: str,
-    _: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
-    ],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
 ):
     user = users.get_user(db_connector.engine, username=username)
     if not user:
@@ -85,9 +83,7 @@ async def get_user(
 )
 async def delete_user(
     username: str,
-    _: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_super_user_with_token)
-    ],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
 ):
     users.delete_user(db_connector.engine, username=username)
     return helpers.EmptyResponse()

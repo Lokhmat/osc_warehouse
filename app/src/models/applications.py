@@ -53,12 +53,6 @@ class InternalApplication(BaseModel):
     updated_at: datetime
 
 
-class ApplicationModifier(BaseModel):
-    username: str
-    first_name: str
-    last_name: str
-
-
 class ApplicationData(BaseModel):
     name: str
     description: str
@@ -75,7 +69,6 @@ class MutableApplicationData(BaseModel):
     name: str
     description: str
     type: ApplicationType
-    status: ApplicationStatus
     sent_from_warehouse_id: typing.Optional[str] = None
     sent_to_warehouse_id: typing.Optional[str] = None
     linked_to_application_id: typing.Optional[str] = None
@@ -113,7 +106,7 @@ class ChangeApplicationRequest(BaseModel):
             name=self.application_data.name,
             description=self.application_data.description,
             type=self.application_data.type,
-            status=self.application_data.status,
+            status=ApplicationStatus.PENDING,
             payload=self.application_payload.to_db_view(),
             created_by_id=created_by_id,
             sent_from_warehouse_id=self.application_data.sent_from_warehouse_id,
@@ -220,34 +213,6 @@ def _get_application_data(connection, application):
         sent_to_warehouse,
         sent_from_warehouse,
     )
-
-
-def _add_to_warehouse(connection, sent_to_warehouse_id, payload):
-    with open(
-        f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/update_warehouse_to_items.sql"
-    ) as sql:
-        query = text(sql.read())
-        warehouse_ids, item_ids, counts = _repack_payload_from_application(
-            sent_to_warehouse_id, payload
-        )
-        connection.execute(
-            query,
-            {"warehouse_ids": warehouse_ids, "item_ids": item_ids, "counts": counts},
-        )
-
-
-def _remove_from_warehouse(connection, sent_to_warehouse_id, payload):
-    with open(
-        f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/update_warehouse_to_items.sql"
-    ) as sql:
-        query = text(sql.read())
-        warehouse_ids, item_ids, counts = _repack_payload_from_application(
-            sent_to_warehouse_id, payload
-        )
-        connection.execute(
-            query,
-            {"warehouse_ids": warehouse_ids, "item_ids": item_ids, "counts": counts},
-        )
 
 
 def get_application_with_actions(
@@ -386,6 +351,7 @@ def get_application_by_id(
                 created_at=application.created_at,
                 updated_at=application.updated_at,
             )
+
 
 def approve_application(engine, id: str, approver_id: str):
     with engine.connect() as connection:
