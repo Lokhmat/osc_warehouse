@@ -56,7 +56,7 @@ async def create_user(
 )
 async def get_users(
     _: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_user_user_with_token)
+        users.InternalUser, Depends(crypto.authorize_user_with_token)
     ]
 ):
     db_users = users.get_users(db_connector.engine)
