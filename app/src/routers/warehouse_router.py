@@ -51,11 +51,13 @@ async def get_warehouse_by_id(
     responses=helpers.UNATHORIZED_RESPONSE,
 )
 async def get_warehouse_list(
-    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)]
+    user: typing.Annotated[
+        users.InternalUser, Depends(crypto.authorize_user_with_token)
+    ]
 ):
-    return warehouse.ApiWarehouseList(
-        items=warehouse.get_warehouse_list(engine=db_connector.engine)
-    )
+    result = warehouse.get_warehouse_list(engine=db_connector.engine)
+    result = [wh for wh in result if wh.id in user.warehouses or user.is_superuser]
+    return warehouse.ApiWarehouseList(items=result)
 
 
 @warehouse_router.put(

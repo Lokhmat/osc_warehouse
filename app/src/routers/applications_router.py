@@ -95,7 +95,6 @@ async def delete_application(
     return helpers.EmptyResponse()
 
 
-# TODO: Добавить идемпотентность
 @applications_router.put(
     "/applications/approve",
     response_model=helpers.EmptyResponse,
@@ -138,5 +137,6 @@ async def get_applications_list(
     ],
     cursor: typing.Optional[datetime] = None,
 ):
-    # TODO: Возвращать в зависимости от пользователя
-    return applications.get_applications_list(db_connector.engine, cursor, limit)
+    if user.is_superuser or user.is_admin or user.is_reviewer:
+        return applications.get_applications_list(db_connector.engine, None, cursor, limit)
+    return applications.get_applications_list(db_connector.engine, user.id, cursor, limit)

@@ -1,7 +1,6 @@
 SELECT
     application_id as id,
     serial_number,
-    name,
     description,
     type,
     status,
@@ -17,6 +16,8 @@ FROM
     app.applications
 WHERE
     created_at < COALESCE(:cursor, NOW())
+    AND
+    (:chained_to_user_id IS NULL OR :chained_to_user_id = created_by_id)
 ORDER BY created_at DESC
 LIMIT :limit
 ;

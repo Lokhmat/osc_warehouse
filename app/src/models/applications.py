@@ -471,14 +471,14 @@ def delete_application(engine, id: str, user_id: str):
     logging.info(f"Successfully deleted application {id}")
 
 
-def get_applications_list(engine, cursor: datetime, limit: int):
+def get_applications_list(engine, chained_to_user_id: typing.Optional[str], cursor: datetime, limit: int):
     with engine.connect() as connection:
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/get_applications_list.sql"
         ) as sql:
             query = text(sql.read())
             applications = connection.execute(
-                query, {"cursor": cursor, "limit": limit}
+                query, {"cursor": cursor, "limit": limit, "chained_to_user_id": chained_to_user_id}
             ).all()
             result = ApplicationsList(
                 items=[],
