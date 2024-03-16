@@ -138,5 +138,5 @@ async def get_applications_list(
     ],
     cursor: typing.Optional[datetime] = None,
 ):
-    # Возвращать в зависимости от пользователя
+    # TODO: Возвращать в зависимости от пользователя
     return applications.get_applications_list(db_connector.engine, cursor, limit)

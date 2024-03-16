@@ -1,7 +1,6 @@
 INSERT INTO
     app.applications(
         application_id,
-        name,
         description,
         type,
         status,
@@ -17,7 +16,6 @@ INSERT INTO
 VALUES
     (
         :application_id,
-        :name,
         :description,
         :type,
         :status,
@@ -35,7 +33,7 @@ SET
     application_id = :application_id
 RETURNING
     application_id as id,
-    name,
+    applications.serial_number,
     description,
     type,
     status,

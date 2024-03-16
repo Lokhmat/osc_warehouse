@@ -4,7 +4,7 @@ CREATE TYPE app.application_status AS ENUM ('pending', 'success', 'rejected');
 
 CREATE TABLE app.applications (
     application_id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
+    serial_number BIGSERIAL NOT NULL,
     description TEXT NOT NULL,
     type app.application_type NOT NULL,
     status app.application_status NOT NULL,

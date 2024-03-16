@@ -1,6 +1,5 @@
 UPDATE app.applications SET 
     application_id = :application_id,
-    name = :name,
     description = :description,
     type = :type,
     status = :status,
@@ -12,7 +11,7 @@ UPDATE app.applications SET
 WHERE application_id = :application_id
 RETURNING 
     application_id as id,
-    name,
+    serial_number,
     description,
     type,
     status,

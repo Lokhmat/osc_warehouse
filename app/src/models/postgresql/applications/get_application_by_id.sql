@@ -1,6 +1,6 @@
 SELECT
     application_id as id,
-    name,
+    serial_number,
     description,
     type,
     status,

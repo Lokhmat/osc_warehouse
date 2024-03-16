@@ -39,7 +39,6 @@ class ApplicationAction(str, Enum):
 
 class InternalApplication(BaseModel):
     application_id: str
-    name: str
     description: str
     type: ApplicationType
     status: ApplicationStatus
@@ -54,7 +53,7 @@ class InternalApplication(BaseModel):
 
 
 class ApplicationData(BaseModel):
-    name: str
+    serial_number: int
     description: str
     type: ApplicationType
     status: ApplicationStatus
@@ -66,7 +65,6 @@ class ApplicationData(BaseModel):
 
 
 class MutableApplicationData(BaseModel):
-    name: str
     description: str
     type: ApplicationType
     sent_from_warehouse_id: typing.Optional[str] = None
@@ -103,7 +101,6 @@ class ChangeApplicationRequest(BaseModel):
     def get_internal_application(self, idempotency_token: str, created_by_id: str):
         return InternalApplication(
             application_id=idempotency_token,
-            name=self.application_data.name,
             description=self.application_data.description,
             type=self.application_data.type,
             status=ApplicationStatus.PENDING,
@@ -254,7 +251,7 @@ def create_application(
             result = Application(
                 id=application.id,
                 application_data=ApplicationData(
-                    name=application.name,
+                    serial_number=application.serial_number,
                     description=application.description,
                     type=application.type,
                     status=application.status,
@@ -295,7 +292,7 @@ def update_application(
             result = Application(
                 id=application.id,
                 application_data=ApplicationData(
-                    name=application.name,
+                    serial_number=application.serial_number,
                     description=application.description,
                     type=application.type,
                     status=application.status,
@@ -337,7 +334,7 @@ def get_application_by_id(
             return Application(
                 id=application.id,
                 application_data=ApplicationData(
-                    name=application.name,
+                    serial_number=application.serial_number,
                     description=application.description,
                     type=application.type,
                     status=application.status,
@@ -501,7 +498,7 @@ def get_applications_list(engine, cursor: datetime, limit: int):
                     Application(
                         id=application.id,
                         application_data=ApplicationData(
-                            name=application.name,
+                            serial_number=application.serial_number,
                             description=application.description,
                             type=application.type,
                             status=application.status,
