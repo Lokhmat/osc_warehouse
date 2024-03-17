@@ -371,12 +371,13 @@ def approve_application(engine, id: str, approver_id: str):
             result = connection.execute(
                 query, {"application_id": id, "finished_by_id": approver_id}
             ).all()
-            sent_from_warehouse_id, sent_to_warehouse_id, payload = (
+            sent_from_warehouse_id, sent_to_warehouse_id, application_type, payload = (
                 result[0].sent_from_warehouse_id,
                 result[0].sent_to_warehouse_id,
+                result[0].type,
                 result[0].payload,
             )
-        if sent_from_warehouse_id:
+        if sent_from_warehouse_id and (not sent_to_warehouse_id or sent_to_warehouse_id and application_type == ApplicationType.SEND):
             with open(
                 f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deduct_items_from_warehouse.sql"
             ) as sql:
@@ -397,7 +398,7 @@ def approve_application(engine, id: str, approver_id: str):
                     raise helpers.get_bad_request(
                         "Нельзя списать больше товаров чем есть на складе"
                     )
-        if sent_to_warehouse_id:
+        if sent_to_warehouse_id and (not sent_from_warehouse_id or sent_from_warehouse_id and application_type == ApplicationType.RECIEVE):
             with open(
                 f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deposit_items_on_warehouse.sql"
             ) as sql:
