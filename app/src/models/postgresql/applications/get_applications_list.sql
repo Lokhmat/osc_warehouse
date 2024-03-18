@@ -18,6 +18,8 @@ WHERE
     created_at < COALESCE(:cursor, NOW())
     AND
     (:chained_to_user_id IS NULL OR :chained_to_user_id = created_by_id)
+    AND
+    (:status_filter IS NULL OR status = :status_filter)
 ORDER BY created_at DESC
 LIMIT :limit
 ;

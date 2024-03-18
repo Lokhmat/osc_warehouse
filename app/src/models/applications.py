@@ -377,7 +377,11 @@ def approve_application(engine, id: str, approver_id: str):
                 result[0].type,
                 result[0].payload,
             )
-        if sent_from_warehouse_id and (not sent_to_warehouse_id or sent_to_warehouse_id and application_type == ApplicationType.SEND):
+        if sent_from_warehouse_id and (
+            not sent_to_warehouse_id
+            or sent_to_warehouse_id
+            and application_type == ApplicationType.SEND
+        ):
             with open(
                 f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deduct_items_from_warehouse.sql"
             ) as sql:
@@ -398,7 +402,11 @@ def approve_application(engine, id: str, approver_id: str):
                     raise helpers.get_bad_request(
                         "Нельзя списать больше товаров чем есть на складе"
                     )
-        if sent_to_warehouse_id and (not sent_from_warehouse_id or sent_from_warehouse_id and application_type == ApplicationType.RECIEVE):
+        if sent_to_warehouse_id and (
+            not sent_from_warehouse_id
+            or sent_from_warehouse_id
+            and application_type == ApplicationType.RECIEVE
+        ):
             with open(
                 f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deposit_items_on_warehouse.sql"
             ) as sql:
@@ -472,14 +480,26 @@ def delete_application(engine, id: str, user_id: str):
     logging.info(f"Successfully deleted application {id}")
 
 
-def get_applications_list(engine, chained_to_user_id: typing.Optional[str], cursor: datetime, limit: int):
+def get_applications_list(
+    engine,
+    chained_to_user_id: typing.Optional[str],
+    cursor: datetime,
+    limit: int,
+    status_filter: typing.Optional[ApplicationStatus],
+):
     with engine.connect() as connection:
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/get_applications_list.sql"
         ) as sql:
             query = text(sql.read())
             applications = connection.execute(
-                query, {"cursor": cursor, "limit": limit, "chained_to_user_id": chained_to_user_id}
+                query,
+                {
+                    "cursor": cursor,
+                    "limit": limit,
+                    "chained_to_user_id": chained_to_user_id,
+                    "status_filter": status_filter,
+                },
             ).all()
             result = ApplicationsList(
                 items=[],

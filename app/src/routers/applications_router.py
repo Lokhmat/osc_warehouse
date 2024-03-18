@@ -135,8 +135,13 @@ async def get_applications_list(
     user: typing.Annotated[
         users.InternalUser, Depends(crypto.authorize_user_with_token)
     ],
+    status_filter: typing.Optional[applications.ApplicationStatus] = None,
     cursor: typing.Optional[datetime] = None,
 ):
     if user.is_superuser or user.is_admin or user.is_reviewer:
-        return applications.get_applications_list(db_connector.engine, None, cursor, limit)
-    return applications.get_applications_list(db_connector.engine, user.id, cursor, limit)
+        return applications.get_applications_list(
+            db_connector.engine, None, cursor, limit, status_filter
+        )
+    return applications.get_applications_list(
+        db_connector.engine, user.id, cursor, limit, status_filter
+    )
