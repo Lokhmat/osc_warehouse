@@ -51,7 +51,7 @@ async def get_application(
         raise helpers.NOT_FOUND_ERROR
     actions = []
     if application.application_data.status == applications.ApplicationStatus.PENDING:
-        if user.is_reviewer or user.is_super_user:
+        if user.is_reviewer or user.is_superuser:
             actions = [
                 applications.ApplicationAction.APPROVE,
                 applications.ApplicationAction.REJECT,
