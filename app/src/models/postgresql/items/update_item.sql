@@ -8,6 +8,8 @@ SET
     description = :description,
     codes = COALESCE(:codes, codes),
     updated_at = NOW()
+WHERE
+    id = :id
 RETURNING
     id,
     item_name,
