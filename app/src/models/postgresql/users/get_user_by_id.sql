@@ -15,4 +15,4 @@ FROM
     app.users
 WHERE
     id = :user_id
-    AND NOT is_deleted;
+;
