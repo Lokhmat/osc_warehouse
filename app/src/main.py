@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers.applications_router import applications_router
 from .routers.items_router import items_router
+from .routers.reports_router import reports_router
 from .routers.users_router import users_router
 from .routers.warehouse_router import warehouse_router
 
@@ -33,6 +34,7 @@ app.add_middleware(
 
 app.include_router(applications_router)
 app.include_router(items_router)
+app.include_router(reports_router)
 app.include_router(users_router)
 app.include_router(warehouse_router)
 
