@@ -19,7 +19,7 @@ warehouse_router = APIRouter(tags=["warehouse"])
 async def create_warehouse(
     api_warehouse: warehouse.SimpleWarehouse,
     x_request_idempotency_token: typing.Annotated[str, Header()],
-    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
 ):
     return warehouse.create_warehouse(
         engine=db_connector.engine,

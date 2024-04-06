@@ -49,16 +49,24 @@ async def get_application(
     )
     if not application:
         raise helpers.NOT_FOUND_ERROR
-    actions = []
+    actions = set()
     if application.application_data.status == applications.ApplicationStatus.PENDING:
-        if user.is_reviewer or user.is_superuser:
-            actions = [
-                applications.ApplicationAction.APPROVE,
-                applications.ApplicationAction.REJECT,
-                applications.ApplicationAction.EDIT,
-                applications.ApplicationAction.DELETE,
-            ]
-    return applications.get_application_with_actions(application, actions)
+        if user.is_admin or user.is_superuser:
+            actions.update(
+                [
+                    applications.ApplicationAction.APPROVE,
+                    applications.ApplicationAction.REJECT,
+                    applications.ApplicationAction.EDIT,
+                ]
+            )
+        if user.username == application.application_data.created_by.username:
+            actions.update(
+                [
+                    applications.ApplicationAction.EDIT,
+                    applications.ApplicationAction.DELETE,
+                ]
+            )
+    return applications.get_application_with_actions(application, list(actions))
 
 
 @applications_router.patch(
@@ -103,7 +111,7 @@ async def delete_application(
 async def approve_application(
     id: str,
     user: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_reviewer_with_token)
+        users.InternalUser, Depends(crypto.authorize_admin_with_token)
     ],
 ):
     applications.approve_application(db_connector.engine, id, user.id)
@@ -118,7 +126,7 @@ async def approve_application(
 async def reject_application(
     id: str,
     user: typing.Annotated[
-        users.InternalUser, Depends(crypto.authorize_reviewer_with_token)
+        users.InternalUser, Depends(crypto.authorize_admin_with_token)
     ],
 ):
     applications.reject_application(db_connector.engine, id, user.id)
@@ -138,7 +146,7 @@ async def get_applications_list(
     status_filter: typing.Optional[applications.ApplicationStatus] = None,
     cursor: typing.Optional[datetime] = None,
 ):
-    if user.is_superuser or user.is_admin or user.is_reviewer:
+    if user.is_superuser or user.is_admin:
         return applications.get_applications_list(
             db_connector.engine, None, cursor, limit, status_filter
         )
