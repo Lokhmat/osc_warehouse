@@ -11,4 +11,5 @@ WHERE
     updated_at <= :to_date
     AND
     updated_at >= :from_date
+ORDER BY updated_at ASC
 ;

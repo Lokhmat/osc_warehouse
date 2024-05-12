@@ -237,8 +237,6 @@ def create_application(
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/create_application.sql"
         ) as sql:
-            # Может все таки переписать на классы?
-            # Кривовато получается что тут нужно импортить модуль другой модели
             query = text(sql.read())
             args = new_application.model_dump()
             application = connection.execute(query, args).all()
