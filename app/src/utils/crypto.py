@@ -14,7 +14,7 @@ from ..models import users
 from ..models.connector import db_connector
 from ..models.helpers import NO_PERMISSIONS_ERROR, UNATHORIZED_ERROR
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["sha256_crypt"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
