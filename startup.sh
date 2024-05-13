@@ -3,9 +3,7 @@
 docker compose up --build --detach
 
 crontab -r
-
-crontab -l > mycron
-echo "1 * * * * sudo docker exec -t database pg_dumpall -c > dump_$(date +%Y-%m-%d_%H_%M_%S).sql" >> mycron
+echo "0 0 1,20 * * rm postgres_dump.gzip; sudo docker exec -t database pg_dumpall -c | gzip > ./postgres_dump.gzip" >> mycron
 crontab mycron
 rm mycron
 
