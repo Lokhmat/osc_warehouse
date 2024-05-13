@@ -3,7 +3,7 @@
 docker compose up --build --detach;
 
 crontab -r;
-echo "0 0 1,20 * * rm postgres_dump.gzip; sudo docker exec -t database pg_dumpall -c | gzip > ./postgres_dump.gzip" >> mycron;
+echo "0 0 1,20 * * rm postgres_dump.gz; sudo docker exec -t database pg_dumpall -c | gzip > ./postgres_dump.gz" >> mycron;
 crontab mycron;
 rm mycron;
 
