@@ -59,7 +59,7 @@ class ApiUser(BaseModel):
     phone_number: str
     warehouses: typing.List[str]
     is_admin: bool
-    is_reviewer: bool
+    is_reviewer: typing.Optional[bool] = False
     is_superuser: bool
 
 
