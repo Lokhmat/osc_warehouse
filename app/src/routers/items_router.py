@@ -87,3 +87,27 @@ async def get_items_list_by_warehouse(
     _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
 ):
     return items.get_items_by_warehouse(db_connector.engine, warehouse_id)
+
+
+@items_router.post(
+    "/item/category",
+    response_model=helpers.EmptyResponse,
+    responses=helpers.UNATHORIZED_RESPONSE,
+)
+async def create_item_category(
+    category: items.ItemCategory,
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_admin_with_token)],
+):
+    items.create_item_category(db_connector.engine, category)
+    return helpers.EmptyResponse()
+
+
+@items_router.get(
+    "/item/category/list",
+    response_model=items.ItemCategoriesList,
+    responses=helpers.UNATHORIZED_RESPONSE,
+)
+async def create_item_category(
+    _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
+):
+    return items.get_item_categories(db_connector.engine)

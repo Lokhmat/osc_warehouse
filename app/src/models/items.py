@@ -66,6 +66,14 @@ class ListItemsWithCount(BaseModel):
     items: typing.List[ItemWithCount]
 
 
+class ItemCategory(BaseModel):
+    category_name: str
+
+
+class ItemCategoriesList(BaseModel):
+    categories: typing.List[ItemCategory]
+
+
 def create_item(engine, idempotency_token: str, new_item: CreateItem):
     with engine.connect() as connection:
         with open(
@@ -146,3 +154,29 @@ def delete_item(engine, item_id: str):
             query = text(sql.read())
             connection.execute(query, {"item_id": item_id})
         connection.commit()
+
+
+def create_item_category(engine, category: ItemCategory):
+    with engine.connect() as connection:
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/create_category.sql"
+        ) as sql:
+            query = text(sql.read())
+            connection.execute(query, {"category_name": category.category_name})
+        connection.commit()
+
+
+def get_item_categories(engine) -> ItemCategoriesList:
+    with engine.connect() as connection:
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/get_categories.sql"
+        ) as sql:
+            query = text(sql.read())
+            categories = connection.execute(query).all()
+        connection.commit()
+    return ItemCategoriesList(
+        categories=[
+            ItemCategory(category_name=category.category_name)
+            for category in categories
+        ]
+    )
