@@ -66,6 +66,17 @@ async def get_application(
                     applications.ApplicationAction.DELETE,
                 ]
             )
+            if (
+                application.application_data.type == applications.ApplicationType.USE
+                or application.application_data.type
+                == applications.ApplicationType.DEFECT
+            ):
+                actions.update(
+                    [
+                        applications.ApplicationAction.APPROVE,
+                        applications.ApplicationAction.REJECT,
+                    ]
+                )
     return applications.get_application_with_actions(application, list(actions))
 
 

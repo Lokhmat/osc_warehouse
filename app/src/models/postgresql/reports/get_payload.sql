@@ -3,7 +3,8 @@ SELECT
     sent_to_warehouse_id,
     payload,
     updated_at,
-    type
+    type,
+    created_by_id
 FROM app.applications
 WHERE
     status = 'success'
