@@ -31,6 +31,8 @@ class Report(BaseModel):
 
 
 class RawRow(BaseModel):
+    serial_number: int
+    description: str
     warehouse_id: str
     item_id: str
     count: int
@@ -50,6 +52,8 @@ class ReportGenerator:
             "Количество",
             "Склад",
             "Заявка создана",
+            "Номер заявки",
+            "Описание заявки",
             "Дата поступления",
             "Дата списания",
         )
@@ -78,6 +82,8 @@ class ReportGenerator:
                 result.extend(
                     [
                         RawRow(
+                            serial_number=row.serial_number,
+                            description=row.description,
                             warehouse_id=row.sent_to_warehouse_id
                             if row.type == ApplicationType.RECIEVE
                             else row.sent_from_warehouse_id,
@@ -145,6 +151,8 @@ class ReportGenerator:
                     row.count,
                     warehouses.get(row.warehouse_id),
                     created_by.get(row.created_by_id),
+                    row.serial_number,
+                    row.description,
                     row.deposited_at.astimezone(MOSCOW_TIMEZONE).strftime(
                         "%H:%M %d %m %Y"
                     )

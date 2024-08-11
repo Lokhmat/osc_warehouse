@@ -1,4 +1,6 @@
 SELECT 
+    serial_number,
+    description,
     sent_from_warehouse_id,
     sent_to_warehouse_id,
     payload,

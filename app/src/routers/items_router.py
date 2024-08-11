@@ -13,7 +13,7 @@ items_router = APIRouter(tags=["items"])
 
 
 @items_router.post(
-    "/items", response_model=items.Item, responses=helpers.UNATHORIZED_RESPONSE
+    "/items", response_model=items.Item, responses=helpers.BAD_REQUEST_RESPONSE
 )
 async def create_item(
     new_item: items.CreateItem,

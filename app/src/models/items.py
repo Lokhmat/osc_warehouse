@@ -1,3 +1,4 @@
+from hmac import new
 import logging
 import typing
 
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from ..constants import BASE_POSTGRES_TRANSACTIONS_DIRECTORY
+from ..models import helpers
 
 
 class Item(BaseModel):
@@ -76,6 +78,16 @@ class ItemCategoriesList(BaseModel):
 
 def create_item(engine, idempotency_token: str, new_item: CreateItem):
     with engine.connect() as connection:
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/check_new_item_codes.sql"
+        ) as sql:
+            query = text(sql.read())
+            args = {"codes": new_item.codes}
+            existing_items = connection.execute(query, args).all()
+            if existing_items:
+                raise helpers.get_bad_request(
+                    f"Товары с такими ШК уже существуют: {' '.join([e.item_name for e in existing_items])}"
+                )
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/create_item.sql"
         ) as sql:
