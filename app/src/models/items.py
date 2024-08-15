@@ -82,7 +82,7 @@ def create_item(engine, idempotency_token: str, new_item: CreateItem):
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/check_new_item_codes.sql"
         ) as sql:
             query = text(sql.read())
-            args = {"codes": new_item.codes}
+            args = {"codes": new_item.codes, "item_id": None}
             existing_items = connection.execute(query, args).all()
             if existing_items:
                 raise helpers.get_bad_request(
@@ -147,6 +147,16 @@ def get_items_by_warehouse(engine, warehouse_id: str):
 def update_item(engine, new_item_data: UpdateItem):
     result: typing.Optional[Item] = None
     with engine.connect() as connection:
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/check_new_item_codes.sql"
+        ) as sql:
+            query = text(sql.read())
+            args = {"codes": new_item_data.codes, "id": new_item_data.id}
+            existing_items = connection.execute(query, args).all()
+            if existing_items:
+                raise helpers.get_bad_request(
+                    f"Товары с такими ШК уже существуют: {' '.join([e.item_name for e in existing_items])}"
+                )
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/update_item.sql"
         ) as sql:
