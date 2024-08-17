@@ -6,6 +6,6 @@ FROM
     app.items
 WHERE
     :codes IS NOT NULL
-    AND id != :id
+    AND (id != :id OR :id IS NULL)
     AND codes && :codes
     AND NOT is_deleted;
