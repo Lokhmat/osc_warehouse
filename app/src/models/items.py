@@ -82,7 +82,7 @@ def create_item(engine, idempotency_token: str, new_item: CreateItem):
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/check_new_item_codes.sql"
         ) as sql:
             query = text(sql.read())
-            args = {"codes": new_item.codes, "item_id": None}
+            args = {"codes": new_item.codes, "id": None}
             existing_items = connection.execute(query, args).all()
             if existing_items:
                 raise helpers.get_bad_request(
