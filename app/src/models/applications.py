@@ -1,5 +1,7 @@
+from calendar import c
 from datetime import datetime
 from enum import Enum
+from hmac import new
 import logging
 import typing
 
@@ -212,6 +214,12 @@ def _get_application_data(connection, application):
     )
 
 
+def _invert_payload(payload: typing.Mapping[str, id]) -> typing.Mapping[str, id]:
+    new_payload: typing.Mapping[str, id] = {}
+    new_payload = {x: -y for x, y in payload.items()}
+    return new_payload
+
+
 def get_application_with_actions(
     application: Application,
     actions: typing.List[ApplicationAction],
@@ -275,6 +283,35 @@ def update_application(
         created_by, sent_from_warehouse, sent_to_warehouse = _validate_application(
             connection, new_application
         )
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/get_application_by_id.sql"
+        ) as sql:
+            query = text(sql.read())
+            application = connection.execute(
+                query, {"application_id": new_application.application_id}
+            ).all()
+            if not application:
+                raise RuntimeError("Could not find application to update")
+            application = application[0]
+
+            if application.status == ApplicationStatus.SUCCESS:
+                debit_credit_items(
+                    connection,
+                    application.sent_from_warehouse_id,
+                    application.sent_to_warehouse_id,
+                    application.type,
+                    _invert_payload(application.payload),
+                )  # Списываем неправильную
+
+                debit_credit_items(
+                    connection,
+                    new_application.sent_from_warehouse_id,
+                    new_application.sent_to_warehouse_id,
+                    new_application.type,
+                    new_application.payload,
+                )  # Записываем правильную
+                new_application.status = ApplicationStatus.SUCCESS
+
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/patch_application.sql"
         ) as sql:
@@ -375,53 +412,65 @@ def approve_application(engine, id: str, approver_id: str):
                 result[0].type,
                 result[0].payload,
             )
-        if sent_from_warehouse_id and (
-            not sent_to_warehouse_id
-            or sent_to_warehouse_id
-            and application_type == ApplicationType.SEND
-        ):
-            with open(
-                f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deduct_items_from_warehouse.sql"
-            ) as sql:
-                query = text(sql.read())
-                _, item_ids, counts = _repack_payload_from_application(
-                    sent_from_warehouse_id, payload
-                )
-                result = connection.execute(
-                    query,
-                    {
-                        "warehouse_id": sent_from_warehouse_id,
-                        "item_ids": item_ids,
-                        "counts": counts,
-                    },
-                )
-                if result.rowcount != len(item_ids):
-                    connection.rollback()
-                    raise helpers.get_bad_request(
-                        "Нельзя списать больше товаров чем есть на складе"
-                    )
-        if sent_to_warehouse_id and (
-            not sent_from_warehouse_id
-            or sent_from_warehouse_id
-            and application_type == ApplicationType.RECIEVE
-        ):
-            with open(
-                f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deposit_items_on_warehouse.sql"
-            ) as sql:
-                query = text(sql.read())
-                warehouse_ids, item_ids, counts = _repack_payload_from_application(
-                    sent_to_warehouse_id, payload
-                )
-                connection.execute(
-                    query,
-                    {
-                        "warehouse_ids": warehouse_ids,
-                        "item_ids": item_ids,
-                        "counts": counts,
-                    },
-                )
+        debit_credit_items(
+            connection,
+            sent_from_warehouse_id,
+            sent_to_warehouse_id,
+            application_type,
+            payload,
+        )
         connection.commit()
     logging.info(f"Successfully approved application {id}")
+
+
+def debit_credit_items(
+    connection, sent_from_warehouse_id, sent_to_warehouse_id, application_type, payload
+):
+    if sent_from_warehouse_id and (
+        not sent_to_warehouse_id
+        or sent_to_warehouse_id
+        and application_type == ApplicationType.SEND
+    ):
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deduct_items_from_warehouse.sql"
+        ) as sql:
+            query = text(sql.read())
+            _, item_ids, counts = _repack_payload_from_application(
+                sent_from_warehouse_id, payload
+            )
+            result = connection.execute(
+                query,
+                {
+                    "warehouse_id": sent_from_warehouse_id,
+                    "item_ids": item_ids,
+                    "counts": counts,
+                },
+            )
+            if result.rowcount != len(item_ids):
+                connection.rollback()
+                raise helpers.get_bad_request(
+                    "Нельзя списать больше товаров чем есть на складе"
+                )
+    if sent_to_warehouse_id and (
+        not sent_from_warehouse_id
+        or sent_from_warehouse_id
+        and application_type == ApplicationType.RECIEVE
+    ):
+        with open(
+            f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/applications/deposit_items_on_warehouse.sql"
+        ) as sql:
+            query = text(sql.read())
+            warehouse_ids, item_ids, counts = _repack_payload_from_application(
+                sent_to_warehouse_id, payload
+            )
+            connection.execute(
+                query,
+                {
+                    "warehouse_ids": warehouse_ids,
+                    "item_ids": item_ids,
+                    "counts": counts,
+                },
+            )
 
 
 def reject_application(engine, id: str, reviewer_id: str):
@@ -501,9 +550,9 @@ def get_applications_list(
             ).all()
             result = ApplicationsList(
                 items=[],
-                cursor=applications[-1].created_at
-                if len(applications) == limit
-                else None,
+                cursor=(
+                    applications[-1].created_at if len(applications) == limit else None
+                ),
             )
             for application in applications:
                 (
@@ -522,9 +571,9 @@ def get_applications_list(
                             type=application.type,
                             status=application.status,
                             created_by=convert_user(created_by),
-                            finished_by=convert_user(finished_by)
-                            if finished_by
-                            else None,
+                            finished_by=(
+                                convert_user(finished_by) if finished_by else None
+                            ),
                             sent_from_warehouse=sent_from_warehouse,
                             sent_to_warehouse=sent_to_warehouse,
                             linked_to_application_id=application.linked_to_application_id,

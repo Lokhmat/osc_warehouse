@@ -55,9 +55,9 @@ class ItemWithCount(Item):
 
 
 class ItemWithWarehouseCount(Item):
-    warehouse_count: typing.Mapping[
-        str, int
-    ] = dict()  # warehouse name to item count on warehouse
+    warehouse_count: typing.Mapping[str, int] = (
+        dict()
+    )  # warehouse name to item count on warehouse
 
 
 class ListItems(BaseModel):
@@ -131,14 +131,26 @@ def get_items_list(engine):
     return ListItems(items=items)
 
 
-def get_items_by_warehouse(engine, warehouse_id: str):
+def get_items_by_warehouse(
+    engine,
+    warehouse_id: str,
+    item_name: typing.Optional[str],
+    item_cat: typing.Optional[str],
+):
     items: typing.List[ItemWithCount] = []
     with engine.connect() as connection:
         with open(
             f"{BASE_POSTGRES_TRANSACTIONS_DIRECTORY}/items/get_item_count_by_warehouse.sql"
         ) as sql:
             query = text(sql.read())
-            for row in connection.execute(query, {"warehouse_id": warehouse_id}):
+            for row in connection.execute(
+                query,
+                {
+                    "warehouse_id": warehouse_id,
+                    "item_name": item_name,
+                    "item_cat": item_cat,
+                },
+            ):
                 items.append(ItemWithCount(**row._mapping))
         connection.commit()
     return ListItemsWithCount(items=items)

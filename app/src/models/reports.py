@@ -84,17 +84,23 @@ class ReportGenerator:
                         RawRow(
                             serial_number=row.serial_number,
                             description=row.description,
-                            warehouse_id=row.sent_to_warehouse_id
-                            if row.type == ApplicationType.RECIEVE
-                            else row.sent_from_warehouse_id,
+                            warehouse_id=(
+                                row.sent_to_warehouse_id
+                                if row.type == ApplicationType.RECIEVE
+                                else row.sent_from_warehouse_id
+                            ),
                             item_id=key,
                             count=value,
-                            deposited_at=row.updated_at
-                            if row.type == ApplicationType.RECIEVE
-                            else None,
-                            deducted_at=row.updated_at
-                            if row.type != ApplicationType.RECIEVE
-                            else None,
+                            deposited_at=(
+                                row.updated_at
+                                if row.type == ApplicationType.RECIEVE
+                                else None
+                            ),
+                            deducted_at=(
+                                row.updated_at
+                                if row.type != ApplicationType.RECIEVE
+                                else None
+                            ),
                             created_by_id=row.created_by_id,
                         )
                         for key, value in row.payload.items()
@@ -153,16 +159,20 @@ class ReportGenerator:
                     created_by.get(row.created_by_id),
                     row.serial_number,
                     row.description,
-                    row.deposited_at.astimezone(MOSCOW_TIMEZONE).strftime(
-                        "%H:%M %d %m %Y"
-                    )
-                    if row.deposited_at
-                    else None,
-                    row.deducted_at.astimezone(MOSCOW_TIMEZONE).strftime(
-                        "%H:%M %d %m %Y"
-                    )
-                    if row.deducted_at
-                    else None,
+                    (
+                        row.deposited_at.astimezone(MOSCOW_TIMEZONE).strftime(
+                            "%H:%M %d %m %Y"
+                        )
+                        if row.deposited_at
+                        else None
+                    ),
+                    (
+                        row.deducted_at.astimezone(MOSCOW_TIMEZONE).strftime(
+                            "%H:%M %d %m %Y"
+                        )
+                        if row.deducted_at
+                        else None
+                    ),
                 )
                 for row in rows
             ],

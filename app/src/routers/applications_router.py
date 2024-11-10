@@ -77,6 +77,13 @@ async def get_application(
                         applications.ApplicationAction.REJECT,
                     ]
                 )
+    if application.application_data.status == applications.ApplicationStatus.SUCCESS:
+        if user.is_superuser:
+            actions.update(
+                [
+                    applications.ApplicationAction.EDIT,
+                ]
+            )
     return applications.get_application_with_actions(application, list(actions))
 
 

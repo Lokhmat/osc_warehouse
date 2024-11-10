@@ -85,8 +85,12 @@ async def get_items_list(
 async def get_items_list_by_warehouse(
     warehouse_id: str,
     _: typing.Annotated[users.InternalUser, Depends(crypto.authorize_user_with_token)],
+    item_name: typing.Optional[str] = None,
+    item_cat: typing.Optional[str] = None,
 ):
-    return items.get_items_by_warehouse(db_connector.engine, warehouse_id)
+    return items.get_items_by_warehouse(
+        db_connector.engine, warehouse_id, item_name, item_cat
+    )
 
 
 @items_router.post(
